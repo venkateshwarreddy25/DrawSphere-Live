@@ -1,0 +1,16 @@
+[build]
+  builder = "NIXPACKS"
+
+[deploy]
+  startCommand = "npm start"
+
+[variables]
+  PORT = "5000"
+  # Set these in the Railway dashboard:
+  # MONGO_URI
+  # JWT_SECRET
+  # REDIS_URL
+  # CLAUDE_API_KEY
+  # OPENAI_API_KEY
+  # GOOGLE_VISION_KEY
+  # CLIENT_URL
