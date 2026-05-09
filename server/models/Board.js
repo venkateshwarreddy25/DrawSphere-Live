@@ -1,5 +1,5 @@
 const mongoose = require('mongoose')
-const { v4: uuidv4 } = require('uuid')
+const { randomUUID } = require('crypto')
 
 const BoardSchema = new mongoose.Schema({
   name: {
@@ -11,7 +11,7 @@ const BoardSchema = new mongoose.Schema({
   shareId: {
     type: String,
     unique: true,
-    default: () => uuidv4(),
+    default: () => randomUUID(),
   },
   owner: {
     type: mongoose.Schema.Types.ObjectId,
