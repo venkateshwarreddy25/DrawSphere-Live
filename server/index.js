@@ -76,10 +76,11 @@ const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/whiteboard
 
 mongoose.connect(MONGO_URI)
   .then(() => {
-    console.log('✅ MongoDB connected')
-    server.listen(PORT, () => console.log(`🚀 Server on port ${PORT}`))
+    console.log('✅ MongoDB connected successfully to', MONGO_URI.replace(/:([^:@]+)@/, ':***@'))
+    server.listen(PORT, '0.0.0.0', () => console.log(`🚀 Server listening on 0.0.0.0:${PORT}`))
   })
   .catch(err => {
-    console.error('❌ MongoDB failed:', err.message)
+    console.error('❌ MongoDB connection failed:', err.message)
+    console.error(err)
     process.exit(1)
   })
