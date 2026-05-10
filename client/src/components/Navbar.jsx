@@ -47,7 +47,7 @@ const NAV_LINKS = [
 ]
 
 export default function Navbar({ onCreateBoard }) {
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
   const navigate = useNavigate()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
@@ -89,9 +89,9 @@ export default function Navbar({ onCreateBoard }) {
     }
   }
 
-  const handleLogout = () => {
-    localStorage.clear()
-    navigate('/login')
+  const handleLogout = async () => {
+    await logout()
+    navigate('/')
   }
 
   const handleJoin = (e) => {
@@ -193,14 +193,14 @@ export default function Navbar({ onCreateBoard }) {
                   color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', 
                   fontWeight: 'bold', fontSize: '14px', cursor: 'pointer', border: '2px solid white', boxShadow: 'var(--shadow-sm)'
                 }}>
-                  {(user.name || '?').substring(0,2).toUpperCase()}
+                  {(user.displayName || user.email || '?').substring(0,2).toUpperCase()}
                 </div>
                 {userMenuOpen && (
                   <div className="glass-card" style={{ 
                     position: 'absolute', top: 'calc(100% + 8px)', right: 0, padding: '8px', minWidth: '200px', 
                     display: 'flex', flexDirection: 'column', gap: '4px', zIndex: 100 
                   }}>
-                    <button onClick={() => navigate('/')} className="menu-item">My Boards</button>
+                    <button onClick={() => { navigate('/home'); setTimeout(() => { document.getElementById('recent-boards')?.scrollIntoView({ behavior: 'smooth' }) }, 100) }} className="menu-item">My Boards</button>
                     <button className="menu-item">Settings</button>
                     <div style={{ height: '1px', background: 'var(--border-subtle)', margin: '4px 0' }} />
                     <button onClick={handleLogout} className="menu-item" style={{ color: 'var(--danger)' }}>Sign Out</button>
@@ -233,13 +233,13 @@ export default function Navbar({ onCreateBoard }) {
               <button onClick={() => setMobileMenuOpen(false)} className="btn btn-icon" style={{ color: 'white' }}><IconX size={24} /></button>
             </div>
 
-            {user?._id && (
+            {user && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', paddingBottom: '24px', borderBottom: '1px solid rgba(255,255,255,0.1)', marginBottom: '24px' }}>
                 <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'var(--secondary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '18px' }}>
-                  {(user.name || '?').substring(0,2).toUpperCase()}
+                  {(user.displayName || user.email || '?').substring(0,2).toUpperCase()}
                 </div>
                 <div>
-                  <div className="font-bold text-16">{user.name}</div>
+                  <div className="font-bold text-16">{user.displayName || user.email}</div>
                   <div className="text-14" style={{ color: 'rgba(255,255,255,0.6)' }}>{user.email}</div>
                 </div>
               </div>
@@ -257,7 +257,7 @@ export default function Navbar({ onCreateBoard }) {
             </div>
 
             <div style={{ marginTop: 'auto', paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {!user?._id ? (
+              {!user ? (
                 <>
                   <button onClick={() => { navigate('/login'); setMobileMenuOpen(false) }} className="btn" style={{ background: 'transparent', color: 'white', border: '1px solid rgba(255,255,255,0.2)', width: '100%', height: '48px' }}>Sign In</button>
                   <button onClick={() => { navigate('/login'); setMobileMenuOpen(false) }} className="btn btn-primary" style={{ background: 'linear-gradient(135deg, var(--primary), var(--secondary))', border: 'none', width: '100%', height: '48px' }}>Get Started</button>

@@ -16,5 +16,6 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig)
 export const auth = getAuth(app)
+auth.useDeviceLanguage()
 export const db = getDatabase(app)
 export const firestore = initializeFirestore(app, { localCache: persistentLocalCache() })

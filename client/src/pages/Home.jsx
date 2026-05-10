@@ -19,7 +19,7 @@ export default function Home() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [boards, setBoards] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [boardsLoading, setBoardsLoading] = useState(true)
   const [creating, setCreating] = useState(false)
   const [newBoardName, setNewBoardName] = useState('')
   const [showCreate, setShowCreate] = useState(false)
@@ -31,18 +31,18 @@ export default function Home() {
         if (!user?.uid) return
         const q = query(collection(firestore, 'boards'), where('ownerId', '==', user.uid))
         const snapshot = await getDocs(q)
-        const userBoards = snapshot.docs.map(doc => doc.data())
+        const userBoards = snapshot.docs.map(d => d.data())
         setBoards(userBoards)
       } catch (e) {
         console.error(e)
       } finally {
-        setLoading(false)
+        setBoardsLoading(false)
       }
     }
     if (user) {
       fetchBoards()
     } else {
-      setLoading(false)
+      setBoardsLoading(false)
     }
   }, [user])
 
@@ -80,7 +80,8 @@ export default function Home() {
     e.stopPropagation()
     if (!window.confirm('Delete this board?')) return
     try {
-      await api.delete(`/boards/${id}`)
+      const { deleteDoc, doc: fsDoc } = await import('firebase/firestore')
+      await deleteDoc(fsDoc(firestore, 'boards', id))
       setBoards(bs => bs.filter(b => b.id !== id))
     } catch (e) {
       console.error(e)
@@ -338,7 +339,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {loading ? (
+              {boardsLoading ? (
                 <div className="board-grid">
                   {[1, 2, 3].map(i => <div key={i} className="board-card-premium skeleton" style={{ minHeight: '240px' }} />)}
                 </div>
@@ -444,8 +445,8 @@ export default function Home() {
       </footer>
 
       {/* Mobile FAB */}
-      {user._id && (
-        <button onClick={() => setShowCreate(true)} className="mobile-only mobile-fab">
+      {user && (
+        <button onClick={() => createBoard()} className="mobile-only mobile-fab">
           <IconPlus size={28} />
         </button>
       )}
