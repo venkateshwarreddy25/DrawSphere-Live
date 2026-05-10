@@ -16,7 +16,6 @@ export default function ShareModal({ boardId, boardName, ownerId, onlineUsers = 
       await navigator.clipboard.writeText(shareLink)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
-      await api.post(`/boards/${boardId}/analytics`, { type: 'share' }).catch(console.error)
     } catch (err) {
       console.error('Failed to copy', err)
     }
@@ -43,7 +42,6 @@ export default function ShareModal({ boardId, boardName, ownerId, onlineUsers = 
         text: 'Let\'s collaborate on DrawSphere!',
         url: shareLink
       })
-      await api.post(`/boards/${boardId}/analytics`, { type: 'share' }).catch(console.error)
     } catch (e) {
       console.log('Share cancelled or failed', e)
     }

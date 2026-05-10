@@ -1,19 +1,24 @@
 import { useState, useEffect } from 'react'
 
-export default function OnlineUsers({ users = {}, currentUserId }) {
+export default function OnlineUsers({ users = [], currentUserId }) {
   const [showBanner, setShowBanner] = useState(false)
   const isMobile = window.matchMedia("(max-width: 768px)").matches
 
-  const userList = Object.values(users)
-  const uniqueUsersMap = new Map()
-  userList.forEach(u => { if (u.uid) uniqueUsersMap.set(u.uid, u) })
-  const uniqueUsers = Array.from(uniqueUsersMap.values())
+  // Ensure users is an array
+  const safeUsers = Array.isArray(users) ? users : Object.values(users || {})
   
-  const others = uniqueUsers.filter(u => u.uid !== currentUserId)
-  const me = uniqueUsers.find(u => u.uid === currentUserId) || userList.find(u => u.uid === currentUserId)
-  const displayUsers = [me, ...others].filter(Boolean)
-  const visibleUsers = isMobile ? [me].filter(Boolean) : displayUsers.slice(0, 4)
-  const extraCount = isMobile ? others.length : displayUsers.length - visibleUsers.length
+  // Get others and current user from the array
+  const others = safeUsers.filter(u => u.uid !== currentUserId)
+  // Current user representation (fallback to default if not in list yet)
+  const me = safeUsers.find(u => u.uid === currentUserId) || {
+    uid: currentUserId,
+    name: 'You',
+    color: '#7C3AED'
+  }
+  
+  const displayUsers = [me, ...others]
+  const visibleUsers = isMobile ? [me] : displayUsers.slice(0, 4)
+  const extraCount = displayUsers.length - visibleUsers.length
 
   // Show collaboration banner when a second user joins (once per session)
   useEffect(() => {
@@ -50,29 +55,23 @@ export default function OnlineUsers({ users = {}, currentUserId }) {
         {visibleUsers.map((u, i) => (
           <div key={u.uid} title={u.uid === currentUserId ? `${u.name} (You)` : u.name} style={{
             position: 'relative', zIndex: 10 - i, marginLeft: i > 0 ? '-8px' : '0',
+            transition: 'opacity 0.3s ease-in',
+            animation: 'fadeIn 0.3s ease-out'
           }}>
             <div style={{
               width: '32px', height: '32px', borderRadius: '50%',
               background: u.color || '#7C3AED', color: 'white',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '12px', fontWeight: '700', fontFamily: 'Outfit, sans-serif',
-              border: '2px solid var(--bg-primary, #0D0D14)',
-              boxShadow: u.uid === currentUserId ? `0 0 0 2px ${u.color || '#7C3AED'}` : 'none',
+              fontSize: '11px', fontWeight: '600', fontFamily: 'Outfit, sans-serif',
+              boxShadow: '0 0 0 2px white',
             }}>
               {(u.name || '?').substring(0, 2).toUpperCase()}
             </div>
-            {/* Green online dot */}
-            <div style={{
-              position: 'absolute', bottom: '1px', right: '1px',
-              width: '8px', height: '8px', borderRadius: '50%',
-              background: '#22C55E', border: '1.5px solid #0D0D14',
-            }} />
-            {/* YOU label (only on desktop or tablet, to save space on mobile) */}
-            {!isMobile && u.uid === currentUserId && (
+            {/* YOU label */}
+            {u.uid === currentUserId && (
               <div style={{
                 position: 'absolute', top: '-14px', left: '50%', transform: 'translateX(-50%)',
-                background: '#374151', color: 'white', padding: '2px 6px', borderRadius: '10px',
-                fontSize: '9px', fontWeight: '700', whiteSpace: 'nowrap', fontFamily: 'Outfit, sans-serif',
+                color: '#7C3AED', fontSize: '9px', fontWeight: '800', whiteSpace: 'nowrap', fontFamily: 'Outfit, sans-serif',
               }}>YOU</div>
             )}
           </div>
@@ -84,15 +83,15 @@ export default function OnlineUsers({ users = {}, currentUserId }) {
             position: isMobile ? 'absolute' : 'relative',
             bottom: isMobile ? '-4px' : 'auto',
             right: isMobile ? '-8px' : 'auto',
-            width: isMobile ? '20px' : '32px', 
-            height: isMobile ? '20px' : '32px', 
+            width: '32px', 
+            height: '32px', 
             borderRadius: '50%',
-            background: isMobile ? 'var(--primary)' : '#374151', 
+            background: '#374151', 
             color: 'white',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: isMobile ? '10px' : '11px', fontWeight: '700', fontFamily: 'Outfit, sans-serif',
-            border: isMobile ? '2px solid var(--bg-primary, #0D0D14)' : '2px solid #0D0D14', 
-            marginLeft: isMobile ? '0' : '-8px', zIndex: 11,
+            fontSize: '11px', fontWeight: '700', fontFamily: 'Outfit, sans-serif',
+            boxShadow: '0 0 0 2px white', 
+            marginLeft: '-8px', zIndex: 11,
           }}>+{extraCount}</div>
         )}
       </div>
@@ -102,8 +101,13 @@ export default function OnlineUsers({ users = {}, currentUserId }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', alignSelf: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: '600', fontFamily: 'Outfit, sans-serif', cursor: 'default' }}>
-              {displayUsers.length} online
+              {Math.max(1, displayUsers.length)} online
             </span>
+            
+            <span style={{
+              width: '6px', height: '6px', borderRadius: '50%',
+              background: '#22C55E', animation: 'pulseGlow 1.5s infinite'
+            }} />
             
             {others.length > 0 && (
               <div style={{
@@ -152,6 +156,10 @@ export default function OnlineUsers({ users = {}, currentUserId }) {
       )}
       <style>{`
         div:hover > .users-tooltip { display: flex !important; }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateX(10px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
       `}</style>
     </div>
   )

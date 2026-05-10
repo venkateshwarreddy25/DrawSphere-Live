@@ -19,3 +19,9 @@ export const auth = getAuth(app)
 auth.useDeviceLanguage()
 export const db = getDatabase(app)
 export const firestore = initializeFirestore(app, { localCache: persistentLocalCache() })
+
+if (firebaseConfig.databaseURL) {
+  console.log('[Firebase] Realtime Database URL:', firebaseConfig.databaseURL)
+} else {
+  console.error('Firebase Realtime Database URL is missing. Check VITE_FIREBASE_DATABASE_URL environment variable.')
+}
