@@ -96,7 +96,7 @@ export default function Home() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh', width: '100vw', maxWidth: '100vw', overflowX: 'hidden', background: '#FFFFFF' }}>
-      <Navbar user={user} onCreateBoard={() => setShowCreate(true)} />
+      <Navbar onCreateBoard={() => setShowCreate(true)} />
 
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column', width: '100%' }}>
 
