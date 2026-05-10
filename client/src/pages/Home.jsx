@@ -9,10 +9,13 @@ import {
 } from '@tabler/icons-react'
 import { Phone, Mail } from 'lucide-react'
 
-import { useAuthModal } from '../App'
+import { useAuth } from '../contexts/AuthContext'
+import { db, firestore } from '../firebase'
+import { collection, doc, setDoc, serverTimestamp, getDocs, query, where } from 'firebase/firestore'
 
 export default function Home() {
   const { showSignupModal } = useAuthModal()
+  const { user } = useAuth()
   const navigate = useNavigate()
   const [boards, setBoards] = useState([])
   const [loading, setLoading] = useState(true)
@@ -21,30 +24,50 @@ export default function Home() {
   const [showCreate, setShowCreate] = useState(false)
   const [search, setSearch] = useState('')
 
-  const user = JSON.parse(localStorage.getItem('wb_user') || '{}')
-
   useEffect(() => {
     const fetchBoards = async () => {
       try {
-        const { data } = await api.get('/boards')
-        setBoards(data)
+        if (!user?.uid) return
+        const q = query(collection(firestore, 'boards'), where('ownerId', '==', user.uid))
+        const snapshot = await getDocs(q)
+        const userBoards = snapshot.docs.map(doc => doc.data())
+        setBoards(userBoards)
       } catch (e) {
         console.error(e)
       } finally {
         setLoading(false)
       }
     }
-    if (user._id) fetchBoards()
-    else setLoading(false)
-  }, [user._id])
+    if (user) {
+      fetchBoards()
+    } else {
+      setLoading(false)
+    }
+  }, [user])
 
   const createBoard = async (e) => {
     if (e) e.preventDefault()
-    if (!newBoardName.trim()) setNewBoardName('Untitled Board')
+    if (!user) {
+      showSignupModal()
+      return
+    }
+    
     setCreating(true)
     try {
-      const { data } = await api.post('/boards', { name: newBoardName.trim() || 'Untitled Board' })
-      navigate(`/board/${data._id}`)
+      const boardId = crypto.randomUUID()
+      const name = newBoardName.trim() || 'Untitled Board'
+      
+      await setDoc(doc(firestore, 'boards', boardId), {
+        id: boardId,
+        name: name,
+        ownerId: user.uid,
+        ownerName: user.displayName || user.email,
+        createdAt: serverTimestamp(),
+        elements: [],
+        collaborators: []
+      })
+      
+      navigate(`/board/${boardId}`)
     } catch (e) {
       console.error(e)
     } finally {
@@ -57,7 +80,7 @@ export default function Home() {
     if (!window.confirm('Delete this board?')) return
     try {
       await api.delete(`/boards/${id}`)
-      setBoards(bs => bs.filter(b => b._id !== id))
+      setBoards(bs => bs.filter(b => b.id !== id))
     } catch (e) {
       console.error(e)
     }
@@ -99,7 +122,7 @@ export default function Home() {
 
           <div className="hero-cta-group">
             <button 
-              onClick={() => user._id ? createBoard() : showSignupModal()} 
+              onClick={() => user ? createBoard() : showSignupModal()} 
               className="btn btn-primary cta-btn primary-cta"
             >
               Get Started for Free
@@ -173,7 +196,7 @@ export default function Home() {
                 </div>
                 <h3>Diagram Generator</h3>
                 <p>Describe your idea in text and instantly get a fully editable flowchart or mind map.</p>
-                <button className="btn btn-primary" onClick={() => setShowCreate(true)}>Try it</button>
+                <button className="btn btn-primary" onClick={() => user ? setShowCreate(true) : showSignupModal()}>Try it</button>
               </div>
               <div className="ai-tool-card">
                 <div className="ai-tool-preview">
@@ -183,7 +206,7 @@ export default function Home() {
                 </div>
                 <h3>Handwriting OCR</h3>
                 <p>Scribble notes naturally with your mouse or stylus, and AI converts it into clean, typed text.</p>
-                <button className="btn btn-primary" onClick={() => setShowCreate(true)}>Try it</button>
+                <button className="btn btn-primary" onClick={() => user ? setShowCreate(true) : showSignupModal()}>Try it</button>
               </div>
               <div className="ai-tool-card">
                 <div className="ai-tool-preview">
@@ -194,7 +217,7 @@ export default function Home() {
                 </div>
                 <h3>Voice to Diagram</h3>
                 <p>Brainstorm out loud. Our voice AI listens and automatically creates the corresponding diagrams.</p>
-                <button className="btn btn-primary" onClick={() => setShowCreate(true)}>Try it</button>
+                <button className="btn btn-primary" onClick={() => user ? setShowCreate(true) : showSignupModal()}>Try it</button>
               </div>
             </div>
           </div>
@@ -240,7 +263,7 @@ export default function Home() {
               No installs, no plugins, just share a link and start drawing together instantly.
             </p>
             <button 
-              onClick={() => user._id ? setShowCreate(true) : showSignupModal()} 
+              onClick={() => user ? setShowCreate(true) : showSignupModal()} 
               className="btn btn-primary cta-btn large-cta" 
               style={{ background: 'white', color: '#1e1b4b', border: 'none', marginBottom: '48px' }}
             >
@@ -294,7 +317,7 @@ export default function Home() {
         </section>
 
         {/* ── Dashboard Section ── */}
-        {!user._id ? (
+        {!user ? (
           <section className="home-section" style={{ background: 'white', textAlign: 'center', padding: '80px 24px' }}>
             <div className="section-container">
               <h2 className="font-bold text-24 mb-4" style={{ marginBottom: '16px' }}>Sign up to save and access your boards</h2>
@@ -328,7 +351,7 @@ export default function Home() {
                   </div>
 
                   {filtered.map((board) => (
-                    <div key={board._id} onClick={() => navigate(`/board/${board._id}`)} className="glass-card board-card-premium" style={{ padding: 0, overflow: 'hidden' }}>
+                    <div key={board.id} onClick={() => navigate(`/board/${board.id}`)} className="glass-card board-card-premium" style={{ padding: 0, overflow: 'hidden' }}>
                       <div style={{ height: '140px', background: board.thumbnail ? `url(${board.thumbnail}) center/cover` : 'linear-gradient(135deg, var(--primary), var(--secondary))', position: 'relative' }}>
                         {!board.thumbnail && <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.5 }}><IconPencil size={48} color="white" /></div>}
                       </div>
@@ -336,12 +359,12 @@ export default function Home() {
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
                           <h3 className="font-bold text-20" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', margin: 0 }}>{board.name}</h3>
                           <div style={{ display: 'flex', gap: '8px' }} onClick={e => e.stopPropagation()}>
-                            <button onClick={(e) => copyLink(board._id, e)} className="btn btn-icon" style={{ padding: '6px' }}><IconShare size={18} /></button>
-                            <button onClick={(e) => deleteBoard(board._id, e)} className="btn btn-icon" style={{ padding: '6px', color: 'var(--danger)' }}><IconTrash size={18} /></button>
+                            <button onClick={(e) => copyLink(board.id, e)} className="btn btn-icon" style={{ padding: '6px' }}><IconShare size={18} /></button>
+                            <button onClick={(e) => deleteBoard(board.id, e)} className="btn btn-icon" style={{ padding: '6px', color: 'var(--danger)' }}><IconTrash size={18} /></button>
                           </div>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', color: 'var(--text-secondary)', fontSize: '14px', fontWeight: '500' }}>
-                          <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><IconClock size={16} /> {new Date(board.updatedAt).toLocaleDateString()}</span>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><IconClock size={16} /> {board.createdAt ? new Date(board.createdAt.seconds * 1000).toLocaleDateString() : 'N/A'}</span>
                           <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><IconUsers size={16} /> {board.collaborators?.length || 1}</span>
                         </div>
                       </div>

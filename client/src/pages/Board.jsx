@@ -15,6 +15,7 @@ import { IconLogout, IconShare2 as TablerShare, IconRobot, IconCheck, IconLoader
 import { Share2, Sparkles } from 'lucide-react'
 import { ref, onValue } from 'firebase/database'
 import { db } from '../firebase'
+import { useAuth } from '../contexts/AuthContext'
 
 function debounce(fn, ms) {
   let timer
@@ -53,7 +54,7 @@ function CollabToast({ user, action }) {
 export default function Board() {
   const { boardId } = useParams()
   const navigate = useNavigate()
-  const user = useMemo(() => JSON.parse(localStorage.getItem('wb_user') || '{}'), [])
+  const { user } = useAuth()
 
   const [tool, setTool] = useState('pen')
   const [color, setColor] = useState('#FFFFFF')

@@ -32,7 +32,7 @@ export default function Login() {
       localStorage.setItem('wb_token', token)
       localStorage.setItem('wb_user', JSON.stringify({ uid: user.uid, name: user.displayName, email: user.email }))
 
-      const redirect = localStorage.getItem('redirectAfterLogin') || '/'
+      const redirect = localStorage.getItem('redirectAfterLogin') || '/home'
       localStorage.removeItem('redirectAfterLogin')
       navigate(redirect)
     } catch (err) {

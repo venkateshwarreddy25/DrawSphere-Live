@@ -6,6 +6,7 @@ import {
 } from '@tabler/icons-react'
 import api from '../api'
 import { useAuthModal } from '../App'
+import { useAuth } from '../contexts/AuthContext'
 
 const NAV_LINKS = [
   {
@@ -45,7 +46,8 @@ const NAV_LINKS = [
   }
 ]
 
-export default function Navbar({ user, onCreateBoard }) {
+export default function Navbar({ onCreateBoard }) {
+  const { user } = useAuth()
   const navigate = useNavigate()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
@@ -171,14 +173,14 @@ export default function Navbar({ user, onCreateBoard }) {
 
         {/* Right: Actions */}
         <div className="desktop-only" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          {!user?._id ? (
+          {!user ? (
             <>
               <button onClick={() => navigate('/login')} className="btn" style={{ background: 'transparent', border: '2px solid var(--border-subtle)', color: 'var(--text-primary)', fontWeight: 'bold' }}>Sign In</button>
               <button onClick={() => navigate('/login')} className="btn btn-primary" style={{ background: 'linear-gradient(135deg, var(--primary), var(--secondary))', border: 'none' }}>Get Started</button>
             </>
           ) : (
             <>
-              <button onClick={onCreateBoard} className="btn btn-primary" style={{ padding: '8px 16px', fontSize: '14px', display: 'flex', gap: '6px' }}>
+              <button onClick={() => user ? onCreateBoard() : showSignupModal()} className="btn btn-primary" style={{ padding: '8px 16px', fontSize: '14px', display: 'flex', gap: '6px' }}>
                 <IconPlus size={16} /> New Board
               </button>
               <button className="btn btn-icon" style={{ position: 'relative' }}>
@@ -262,7 +264,7 @@ export default function Navbar({ user, onCreateBoard }) {
                 </>
               ) : (
                 <>
-                  <button onClick={() => { onCreateBoard(); setMobileMenuOpen(false) }} className="btn btn-primary" style={{ width: '100%', height: '48px', display: 'flex', justifyContent: 'center', gap: '8px' }}>
+                  <button onClick={() => { user ? onCreateBoard() : showSignupModal(); setMobileMenuOpen(false) }} className="btn btn-primary" style={{ width: '100%', height: '48px', display: 'flex', justifyContent: 'center', gap: '8px' }}>
                     <IconPlus size={20} /> New Board
                   </button>
                   <button onClick={() => { handleLogout(); setMobileMenuOpen(false) }} className="btn" style={{ width: '100%', height: '48px', color: '#EF4444', background: 'rgba(239, 68, 68, 0.1)', border: 'none', display: 'flex', justifyContent: 'center' }}>
