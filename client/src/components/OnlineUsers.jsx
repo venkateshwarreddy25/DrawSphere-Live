@@ -97,12 +97,62 @@ export default function OnlineUsers({ users = {}, currentUserId }) {
         )}
       </div>
 
-      {/* Online count label */}
-      {!isMobile && displayUsers.length > 0 && (
-        <span style={{ fontSize: '12px', color: 'var(--text-muted, #6B7280)', fontFamily: 'Outfit, sans-serif', whiteSpace: 'nowrap' }}>
-          {displayUsers.length} online
-        </span>
+      {/* Online count label & Live Pill */}
+      {!isMobile && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', alignSelf: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: '600', fontFamily: 'Outfit, sans-serif', cursor: 'default' }}>
+              {displayUsers.length} online
+            </span>
+            
+            {others.length > 0 && (
+              <div style={{
+                background: 'rgba(34, 197, 94, 0.15)',
+                color: '#22C55E',
+                padding: '2px 8px',
+                borderRadius: '999px',
+                fontSize: '11px',
+                fontWeight: '700',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}>
+                <span style={{
+                  width: '6px', height: '6px', borderRadius: '50%',
+                  background: '#22C55E', animation: 'pulseGlow 1.5s infinite'
+                }} />
+                Live
+              </div>
+            )}
+          </div>
+        </div>
       )}
+
+      {/* Tooltip dropdown on hover */}
+      {!isMobile && (
+        <div className="users-tooltip" style={{
+          position: 'absolute', top: '100%', right: 0, marginTop: '8px',
+          background: '#0D0D14', border: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: '12px', padding: '12px', minWidth: '180px',
+          boxShadow: '0 10px 25px rgba(0,0,0,0.5)', zIndex: 100,
+          display: 'none', flexDirection: 'column', gap: '10px'
+        }}>
+          <div style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: '600', paddingBottom: '6px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+            CURRENTLY ONLINE
+          </div>
+          {displayUsers.map(u => (
+            <div key={u.uid} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: u.color || '#7C3AED' }} />
+              <span style={{ fontSize: '13px', color: 'white', fontWeight: '500' }}>
+                {u.name} {u.uid === currentUserId ? '(You)' : ''}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+      <style>{`
+        div:hover > .users-tooltip { display: flex !important; }
+      `}</style>
     </div>
   )
 }

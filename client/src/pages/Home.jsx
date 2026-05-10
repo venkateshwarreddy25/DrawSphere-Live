@@ -57,20 +57,25 @@ export default function Home() {
     try {
       const boardId = crypto.randomUUID()
       const name = newBoardName.trim() || 'Untitled Board'
+      const ownerName = user.displayName || user.email?.split('@')[0] || 'Unknown'
       
       await setDoc(doc(firestore, 'boards', boardId), {
         id: boardId,
         name: name,
         ownerId: user.uid,
-        ownerName: user.displayName || user.email,
+        ownerName: ownerName,
+        ownerEmail: user.email || '',
         createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
         elements: [],
-        collaborators: []
+        collaborators: [],
+        isPublic: true
       })
       
       navigate(`/board/${boardId}`)
     } catch (e) {
       console.error(e)
+      alert('Failed to create board. Please try again.')
     } finally {
       setCreating(false)
     }

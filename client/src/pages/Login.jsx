@@ -47,7 +47,7 @@ export default function Login() {
       case 'auth/email-already-in-use': return 'An account with this email already exists.'
       case 'auth/weak-password': return 'Password must be at least 6 characters.'
       case 'auth/invalid-email': return 'Please enter a valid email address.'
-      case 'auth/unauthorized-domain': return 'This domain is not authorized. Please contact support.'
+      case 'auth/unauthorized-domain': return 'Please add this domain to Firebase authorized domains in Firebase Console under Authentication Settings.'
       case 'auth/network-request-failed': return 'Network error. Please check your connection.'
       case 'auth/popup-closed-by-user': return 'Google sign-in was cancelled.'
       case 'auth/popup-blocked': return 'Popup blocked by browser. Please allow popups and try again.'

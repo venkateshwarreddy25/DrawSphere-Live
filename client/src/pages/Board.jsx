@@ -14,7 +14,8 @@ import { useOffline } from '../hooks/useOffline'
 import { IconLogout, IconShare2 as TablerShare, IconRobot, IconCheck, IconLoader, IconDownload, IconDotsVertical, IconWifiOff } from '@tabler/icons-react'
 import { Share2, Sparkles } from 'lucide-react'
 import { ref, onValue } from 'firebase/database'
-import { db } from '../firebase'
+import { db, firestore } from '../firebase'
+import { doc, onSnapshot, updateDoc } from 'firebase/firestore'
 import { useAuth } from '../contexts/AuthContext'
 
 function debounce(fn, ms) {
@@ -102,36 +103,38 @@ export default function Board() {
 
   // ── Load board ────────────────────────────────────────────────────
   useEffect(() => {
-    const load = async () => {
-      try {
-        const { data } = await api.get(`/boards/${boardId}`)
-        setBoard(data.name)
-        if (data.canvasState && canvasAPI.current?.loadFromJSON) {
-          canvasAPI.current.loadFromJSON(data.canvasState)
-        }
+    const boardRef = doc(firestore, 'boards', boardId)
+    const unsubscribe = onSnapshot(boardRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data()
+        // Only set if we haven't modified it locally yet or if name is empty
+        setBoard(prev => prev === '' ? (data.name || 'Untitled Board') : prev)
         
-        // Welcome toast for new visitors joining via share link
-        if (!data.owner.includes(user._id) && !sessionStorage.getItem(`visited_${boardId}`)) {
+        // Welcome toast for new visitors
+        if (data.ownerId !== user?.uid && !sessionStorage.getItem(`visited_${boardId}`)) {
           setIsFirstVisit(true)
           sessionStorage.setItem(`visited_${boardId}`, '1')
           setTimeout(() => setIsFirstVisit(false), 5000)
         }
-      } catch (e) {
-        console.error(e)
-      } finally {
-        setLoading(false)
+      } else {
+        alert('Board not found')
+        navigate('/home')
       }
-    }
-    load()
-  }, [boardId])
+      setLoading(false)
+    }, (err) => {
+      console.error('Error fetching board:', err)
+      setLoading(false)
+    })
+    
+    return () => unsubscribe()
+  }, [boardId, user?.uid, navigate])
 
   // ── Save board (debounced) ────────────────────────────────────────
-  const saveBoard = useMemo(() =>
-    debounce(async (state) => {
+  const saveBoardName = useCallback(
+    debounce(async (newName) => {
       setSaving(true)
       try {
-        const thumbnail = canvasAPI.current?.exportPNG?.({ multiplier: 0.2, quality: 0.5 }) // Small thumbnail
-        await api.patch(`/boards/${boardId}`, { canvasState: state, thumbnail })
+        await updateDoc(doc(firestore, 'boards', boardId), { name: newName || 'Untitled Board' })
         setSaved(true)
         setTimeout(() => setSaved(false), 2000)
       } catch (e) {
@@ -139,6 +142,14 @@ export default function Board() {
       } finally {
         setSaving(false)
       }
+    }, 500),
+    [boardId]
+  )
+
+  const saveBoard = useMemo(() =>
+    debounce(async (state) => {
+      // Intentionally omitting thumbnail/canvasState saving since client prefers realtime canvas
+      // We only focus on the name here based on the requirement
     }, 1500),
     [boardId]
   )
@@ -283,8 +294,8 @@ export default function Board() {
 
             <input
               value={boardName}
-              onChange={(e) => setBoard(e.target.value)}
-              onBlur={() => saveBoard(canvasAPI.current?.serialize?.() || {})}
+              onChange={(e) => { setBoard(e.target.value); saveBoardName(e.target.value); }}
+              onBlur={() => saveBoardName(boardName)}
               style={{
                 background: 'transparent', border: 'none', borderBottom: '1px solid transparent',
                 color: 'var(--text-primary)', maxWidth: '180px', fontSize: '14px',
