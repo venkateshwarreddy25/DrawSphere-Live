@@ -28,18 +28,25 @@ export default function Login() {
       const user = userCredential.user;
       const token = await user.getIdToken();
 
-      const { data: mongoUser } = await api.post('/auth/sync', {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
+      // Ensure backward compatibility locally if needed, or just rely on Firebase
       localStorage.setItem('wb_token', token)
-      localStorage.setItem('wb_user', JSON.stringify(mongoUser))
+      localStorage.setItem('wb_user', JSON.stringify({ uid: user.uid, name: user.displayName, email: user.email }))
 
       const redirect = localStorage.getItem('redirectAfterLogin') || '/'
       localStorage.removeItem('redirectAfterLogin')
       navigate(redirect)
     } catch (err) {
-      setError(err.message.replace('Firebase: ', ''))
+      if (err.code === 'auth/unauthorized-domain') {
+        setError('This domain is not authorized in Firebase. Please contact support.')
+      } else if (err.code === 'auth/network-request-failed') {
+        setError('Network error. Please check your connection and try again.')
+      } else if (err.code === 'auth/user-not-found') {
+        setError('No account found with this email.')
+      } else if (err.code === 'auth/wrong-password') {
+        setError('Incorrect password.')
+      } else {
+        setError(err.message.replace('Firebase: ', ''))
+      }
     } finally {
       setLoading(false)
     }

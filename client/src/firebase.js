@@ -2,8 +2,7 @@ import { initializeApp } from 'firebase/app'
 import { getAuth } from 'firebase/auth'
 import { getDatabase } from 'firebase/database'
 
-import { getFirestore, enableIndexedDbPersistence } from 'firebase/firestore'
-
+import { initializeFirestore, persistentLocalCache } from 'firebase/firestore'
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyC46TP5EkB92pboCqYsdm2Px7fs66fcAuI',
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'whiteboardai-93e23.firebaseapp.com',
@@ -18,12 +17,4 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig)
 export const auth = getAuth(app)
 export const db = getDatabase(app)
-export const firestore = getFirestore(app)
-
-enableIndexedDbPersistence(firestore).catch((err) => {
-  if (err.code === 'failed-precondition') {
-    console.warn('Multiple tabs open, offline persistence can only be enabled in one tab at a time.')
-  } else if (err.code === 'unimplemented') {
-    console.warn('The current browser does not support all of the features required to enable persistence.')
-  }
-})
+export const firestore = initializeFirestore(app, { localCache: persistentLocalCache() })

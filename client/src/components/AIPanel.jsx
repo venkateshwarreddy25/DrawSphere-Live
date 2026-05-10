@@ -1,8 +1,10 @@
 import { useState, useRef, useCallback } from 'react'
 import { fabric } from 'fabric'
 
-// ── Backend URL (no auth needed for AI routes) ─────────────────────
-const API_URL = (import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001/api').replace(/\/api$/, '')
+import { apiPost } from '../utils/api'
+
+// ── Backend URL check ─────────────────────
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || ''
 
 // ── Toast ──────────────────────────────────────────────────────────
 function Toast({ message, type }) {
@@ -167,16 +169,14 @@ export default function AIPanel({ fabricRef, onShapesGenerated, onClose }) {
 
   // ── DIAGRAM ─────────────────────────────────────────────────────
   const handleGenerateDiagram = async () => {
+    if (!BACKEND_URL) {
+      showToast('AI features are not configured. Contact the admin.', 'error')
+      return
+    }
     if (!diagramPrompt.trim()) { showToast('Please enter a prompt', 'error'); return }
     setDiagramLoading(true)
     try {
-      const resp = await fetch(`${API_URL}/api/ai/diagram`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: diagramPrompt }),
-      })
-      const data = await resp.json()
-      if (!resp.ok) throw new Error(data.error || `Server error ${resp.status}`)
+      const data = await apiPost('/ai/diagram', { prompt: diagramPrompt })
       if (!Array.isArray(data.shapes)) throw new Error('No shapes in response')
       renderShapes(data.shapes)
       setDiagramPrompt('')
@@ -191,18 +191,16 @@ export default function AIPanel({ fabricRef, onShapesGenerated, onClose }) {
 
   // ── OCR ─────────────────────────────────────────────────────────
   const handleOCR = async () => {
+    if (!BACKEND_URL) {
+      showToast('AI features are not configured. Contact the admin.', 'error')
+      return
+    }
     const c = canvas()
     if (!c) { showToast('Canvas not ready', 'error'); return }
     setOcrLoading(true)
     try {
       const imageBase64 = c.toDataURL({ format: 'png', quality: 0.85 })
-      const resp = await fetch(`${API_URL}/api/ai/ocr`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageBase64 }),
-      })
-      const data = await resp.json()
-      if (!resp.ok) throw new Error(data.error || `Server error ${resp.status}`)
+      const data = await apiPost('/ai/ocr', { imageBase64 })
       // Place extracted text on canvas
       c.add(new fabric.IText(data.text || '(No text found)', {
         left: c.getWidth() / 2 - 160, top: c.getHeight() / 2,
@@ -221,17 +219,15 @@ export default function AIPanel({ fabricRef, onShapesGenerated, onClose }) {
 
   // ── SUMMARIZE ────────────────────────────────────────────────────
   const handleSummarize = async () => {
+    if (!BACKEND_URL) {
+      showToast('AI features are not configured. Contact the admin.', 'error')
+      return
+    }
     if (!summaryInput.trim()) { showToast('Enter text to summarize', 'error'); return }
     setSummaryLoading(true)
     setSummaryResult('')
     try {
-      const resp = await fetch(`${API_URL}/api/ai/summarize`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ texts: [summaryInput] }),
-      })
-      const data = await resp.json()
-      if (!resp.ok) throw new Error(data.error || `Server error ${resp.status}`)
+      const data = await apiPost('/ai/summarize', { texts: [summaryInput] })
       setSummaryResult(data.summary)
 
       // Add sticky note to canvas
@@ -287,14 +283,13 @@ export default function AIPanel({ fabricRef, onShapesGenerated, onClose }) {
           const reader = new FileReader()
           reader.readAsDataURL(blob)
           reader.onloadend = async () => {
+            if (!BACKEND_URL) {
+              setVoiceLoading(false)
+              showToast('AI features are not configured. Contact the admin.', 'error')
+              return
+            }
             const audioBase64 = reader.result.split(',')[1]
-            const resp = await fetch(`${API_URL}/api/ai/voice`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ audioBase64, mimeType }),
-            })
-            const data = await resp.json()
-            if (!resp.ok) throw new Error(data.error || `Server error ${resp.status}`)
+            const data = await apiPost('/ai/voice', { audioBase64, mimeType })
             setTranscript(data.transcript || '')
             if (Array.isArray(data.shapes)) {
               renderShapes(data.shapes)
