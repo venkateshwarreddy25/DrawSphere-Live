@@ -10,6 +10,7 @@ import {
 import { Phone, Mail } from 'lucide-react'
 
 import { useAuth } from '../contexts/AuthContext'
+import { useAuthModal } from '../App'
 import { db, firestore } from '../firebase'
 import { collection, doc, setDoc, serverTimestamp, getDocs, query, where } from 'firebase/firestore'
 
