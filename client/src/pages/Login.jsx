@@ -39,19 +39,21 @@ export default function Login() {
 
   if (loading) return null
 
-  const friendlyError = (code) => {
-    switch (code) {
-      case 'auth/user-not-found': return 'No account found with this email address.'
-      case 'auth/wrong-password': return 'Incorrect password. Please try again.'
+  const friendlyError = (err) => {
+    switch (err.code) {
+      case 'auth/user-not-found': return 'No account found with this email address'
+      case 'auth/wrong-password': return 'Incorrect password. Please try again'
+      case 'auth/invalid-email': return 'Please enter a valid email address'
+      case 'auth/too-many-requests': return 'Too many failed attempts. Please try again later'
+      case 'auth/user-disabled': return 'This account has been disabled'
+      case 'auth/unauthorized-domain': return 'Login is not authorized from this domain. Please contact support'
+      case 'auth/network-request-failed': return 'Network error. Please check your connection'
       case 'auth/invalid-credential': return 'Invalid email or password.'
       case 'auth/email-already-in-use': return 'An account with this email already exists.'
       case 'auth/weak-password': return 'Password must be at least 6 characters.'
-      case 'auth/invalid-email': return 'Please enter a valid email address.'
-      case 'auth/unauthorized-domain': return 'Please add this domain to Firebase authorized domains in Firebase Console under Authentication Settings.'
-      case 'auth/network-request-failed': return 'Network error. Please check your connection.'
       case 'auth/popup-closed-by-user': return 'Google sign-in was cancelled.'
       case 'auth/popup-blocked': return 'Popup blocked by browser. Please allow popups and try again.'
-      default: return 'Something went wrong. Please try again.'
+      default: return err.message || 'Something went wrong. Please try again.'
     }
   }
 
@@ -59,13 +61,16 @@ export default function Login() {
     e.preventDefault()
     setError('')
     setSubmitting(true)
+    console.log('attempting sign in with email')
     try {
-      await signInWithEmail(email, password)
+      const { user } = await signInWithEmail(email, password)
+      console.log('sign in successful, user uid is', user?.uid)
       const redirect = localStorage.getItem('redirectAfterLogin') || '/home'
       localStorage.removeItem('redirectAfterLogin')
       navigate(redirect, { replace: true })
     } catch (err) {
-      setError(friendlyError(err.code))
+      console.log('sign in error code', err.code, err.message)
+      setError(friendlyError(err))
     } finally {
       setSubmitting(false)
     }
@@ -78,11 +83,14 @@ export default function Login() {
     if (password !== confirmPassword) { setError('Passwords do not match.'); return }
     if (password.length < 6) { setError('Password must be at least 6 characters.'); return }
     setSubmitting(true)
+    console.log('attempting sign up with email')
     try {
-      await signUpWithEmail(name.trim(), email, password)
+      const { user } = await signUpWithEmail(name.trim(), email, password)
+      console.log('sign up successful, user uid is', user?.uid)
       navigate('/home', { replace: true })
     } catch (err) {
-      setError(friendlyError(err.code))
+      console.log('sign in error code', err.code, err.message)
+      setError(friendlyError(err))
     } finally {
       setSubmitting(false)
     }
@@ -91,14 +99,17 @@ export default function Login() {
   const handleGoogleSignIn = async () => {
     setError('')
     setGoogleLoading(true)
+    console.log('attempting sign in with google')
     try {
-      await signInWithGoogle()
+      const { user } = await signInWithGoogle()
+      console.log('sign in successful, user uid is', user?.uid)
       const redirect = localStorage.getItem('redirectAfterLogin') || '/home'
       localStorage.removeItem('redirectAfterLogin')
       navigate(redirect, { replace: true })
     } catch (err) {
+      console.log('sign in error code', err.code, err.message)
       if (err.code !== 'auth/popup-closed-by-user') {
-        setError(friendlyError(err.code))
+        setError(friendlyError(err))
       }
     } finally {
       setGoogleLoading(false)
@@ -182,7 +193,7 @@ export default function Login() {
         </div>
 
         {/* Error */}
-        {error && (
+        {error && !submitting && (
           <div style={{
             padding: '12px 16px', background: '#FEF2F2', border: '1.5px solid #FECACA',
             borderRadius: '10px', color: '#DC2626', fontSize: '14px',
